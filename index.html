@@ -136,6 +136,9 @@ input.txt:focus { border-color: var(--pink); outline: none; }
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 10); }
 .actions .btn { padding: 0 calc(var(--u) * 6); font-size: calc(var(--u) * 16); }
 
+/* footer note */
+.foot { margin-top: calc(var(--u) * 16); padding-top: calc(var(--u) * 8); border-top: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 2); color: var(--mute); font-family: var(--num); font-size: calc(var(--u) * 13); letter-spacing: .06em; text-align: center; }
+
 /* bottom nav */
 nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--black); border-top: 1px solid var(--line); padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); z-index: 5; }
 nav.tabs .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -165,14 +168,16 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
   </header>
   <main id="app"></main>
   <div class="probe" id="probe" aria-hidden="true"></div>
+  <footer class="foot" id="foot"><span id="ver"></span><span>Made with passion by kxl47</span></footer>
 </div>
 <nav class="tabs"><div class="in">
-  <button id="tab-table" data-tab="table">Table</button>
+  <button id="tab-table" data-tab="table">Table &amp; Scores</button>
   <button id="tab-teams" data-tab="teams">Teams</button>
 </div></nav>
 
 <script>
 (function () {
+  var VERSION = '1.1', BUILD_DATE = '2026-10-30';
   var KEY = 'sexyfc-tournament-v2';
   var S = null, tab = 'table', confirmTimer = null, exp = {}, openT = {};
 
@@ -405,7 +410,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
     root.style.setProperty('--k', '1');
     probe.innerHTML = renderTeams(true);
     var ids = probe.querySelectorAll('[id]'); for (var i = 0; i < ids.length; i++) ids[i].removeAttribute('id');
-    var need = document.querySelector('header.top').offsetHeight + probe.offsetHeight + 16;
+    var need = document.querySelector('header.top').offsetHeight + probe.offsetHeight + document.getElementById('foot').offsetHeight + 16;
     probe.innerHTML = '';
     var cs = getComputedStyle(root), bs = getComputedStyle(document.body);
     var avail = window.innerHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - parseFloat(bs.paddingTop) - parseFloat(bs.paddingBottom);
@@ -522,6 +527,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
   });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(); });
 
+  document.getElementById('ver').textContent = 'Version ' + VERSION + ' \u00b7 ' + BUILD_DATE;
   S = load() || fresh();
   if (!S.matches) S = fresh();
   render();
