@@ -540,7 +540,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
       var hint = armHint(act);
       if (hint) (b.closest('.field, .seg, .actions') || b).insertAdjacentHTML('afterend', '<p class="hint" id="arm-hint">' + hint + '</p>');
       clearTimeout(confirmTimer);
-      confirmTimer = setTimeout(function () { if (b.isConnected) disarm(b); }, 6000);
+      confirmTimer = setTimeout(function () { if (b.isConnected) disarm(b); }, 10000);
       return;
     }
     if (act === 'bk-copy') {
