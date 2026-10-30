@@ -143,7 +143,7 @@ nav.tabs button { height: 48px; border-radius: 24px; border: 0; background: tran
 nav.tabs button.on { background: var(--pink); color: var(--black); }
 .backup { margin-top: calc(var(--u) * 26); padding-top: calc(var(--u) * 16); border-top: 1px solid var(--line); }
 .backup .actions { margin-top: calc(var(--u) * 4); }
-.backup textarea { display: block; width: 100%; height: calc(var(--u) * 96); margin-top: calc(var(--u) * 10); background: var(--black); color: var(--paper); border: 2px solid var(--pink-dim); border-radius: calc(var(--u) * 8); padding: calc(var(--u) * 8); font-family: var(--num); font-size: max(16px, calc(var(--u) * 15)); resize: none; }
+.backup textarea { display: block; width: 100%; height: calc(var(--u) * 170); white-space: pre; overflow: auto; margin-top: calc(var(--u) * 10); background: var(--black); color: var(--paper); border: 2px solid var(--pink-dim); border-radius: calc(var(--u) * 8); padding: calc(var(--u) * 8); font-family: var(--num); font-size: max(16px, calc(var(--u) * 15)); resize: none; }
 .backup textarea:focus { border-color: var(--pink); outline: none; }
 .backup .msg { margin: calc(var(--u) * 8) 0 0; text-align: center; font-size: calc(var(--u) * 14); color: var(--mute); }
 .backup .msg.ok { color: var(--pink); }
@@ -296,22 +296,77 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
   var bk = { mode: '', msg: '', ok: false, text: '' };
   function renderBackup() {
     var h = '<div class="backup"><h2 class="sec">Backup</h2><div class="actions"><button class="btn" data-act="bk-copy">Copy backup</button><button class="btn" data-act="bk-restore">Restore</button></div>';
-    if (bk.mode === 'show') h += '<textarea id="bk-text" readonly aria-label="Backup text">' + esc(bk.text) + '</textarea><p class="msg">Select all, copy, and keep it somewhere safe.</p>';
-    if (bk.mode === 'paste') h += '<textarea id="bk-text" placeholder="Paste your backup here" aria-label="Paste backup"></textarea><button class="btn fill block" style="margin-top:8px" data-act="bk-load">Load backup</button>';
+    var ta = ' id="bk-text" wrap="off" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"';
+    if (bk.mode === 'show') h += '<textarea' + ta + ' readonly aria-label="Backup text">' + esc(bk.text) + '</textarea>';
+    if (bk.mode === 'paste') h += '<textarea' + ta + ' placeholder="Paste your backup text here" aria-label="Paste backup"></textarea><button class="btn fill block" style="margin-top:8px" data-act="bk-load" data-confirm="' + (hasResults() ? '1' : '') + '">Load backup</button>';
     if (bk.msg) h += '<p class="msg' + (bk.ok ? ' ok' : '') + '">' + esc(bk.msg) + '</p>';
     return h + '</div>';
   }
-  function backupText() { return 'SEXYFC1:' + btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
-  function restoreFrom(txt) {
-    try {
-      txt = String(txt || '').trim();
-      if (txt.indexOf('SEXYFC1:') !== 0) throw 0;
-      var o = JSON.parse(decodeURIComponent(escape(atob(txt.slice(8)))));
-      if (!o || !Array.isArray(o.teams) || !Array.isArray(o.matches) || o.teams.length < 2) throw 0;
-      o.teams.forEach(function (t) { if (!t.id || typeof t.name !== 'string') throw 0; t.players = Array.isArray(t.players) ? t.players : []; });
-      S = { title: String(o.title || 'Tournament'), teams: o.teams, dbl: !!o.dbl, dirty: !!o.dirty, matches: o.matches };
-      return true;
-    } catch (e) { return false; }
+
+  function clean(s) { return String(s).replace(/[\r\n|]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function label(t, i) { return clean(t.name) || ('Team ' + (i + 1)); }
+  function backupText() {
+    var names = {}, L = ['SEXY F.C. TOURNAMENT BACKUP', 'Title: ' + clean(S.title), 'Mode: ' + (S.dbl ? 'home & away' : 'single round'), '', 'TEAMS (name | players)'];
+    S.teams.forEach(function (t, i) {
+      names[t.id] = label(t, i);
+      L.push(names[t.id] + ' | ' + (t.players || []).map(function (p) { return clean(String(p.name).replace(/,/g, ' ')); }).filter(Boolean).join(', '));
+    });
+    L.push('', 'RESULTS (matchday | score | match)');
+    validMatches().forEach(function (m) {
+      L.push('MD' + m.round + ' | ' + (isPlayed(m) ? m.hg + ':' + m.ag : '-:-') + ' | ' + names[m.h] + ' vs ' + names[m.a]);
+    });
+    return L.join('\n');
+  }
+
+  function legacyDecode(txt) {
+    var o = JSON.parse(decodeURIComponent(escape(atob(txt.replace(/\s+/g, '').slice(8)))));
+    if (!o || !Array.isArray(o.teams) || !Array.isArray(o.matches) || o.teams.length < 2) throw 0;
+    o.teams.forEach(function (t) { if (!t.id || typeof t.name !== 'string') throw 0; t.players = Array.isArray(t.players) ? t.players : []; });
+    return { title: String(o.title || 'Tournament'), teams: o.teams, dbl: !!o.dbl, dirty: !!o.dirty, matches: o.matches };
+  }
+
+  function parseBackup(raw) {
+    var txt = String(raw || '').replace(/\r/g, '').replace(/[​ ﻿]/g, ' ');
+    if (/^\s*SEXYFC1:/.test(txt)) { try { return { state: legacyDecode(txt), teams: 0, applied: 0, skipped: 0, legacy: true }; } catch (e) { return { error: 'The old-style backup text is damaged. Copy it again completely.' }; } }
+    var title = 'Tournament', dbl = false, sec = '', teams = [], res = [], skipped = 0;
+    txt.split('\n').forEach(function (line) {
+      var l = line.trim(), m;
+      if (!l) return;
+      if ((m = /^title\s*:\s*(.*)$/i.exec(l))) { title = m[1].trim() || 'Tournament'; return; }
+      if ((m = /^mode\s*:\s*(.*)$/i.exec(l))) { dbl = /home|away|double/i.test(m[1]); return; }
+      if (/^teams\s*\(name/i.test(l) || /^teams\s*:?\s*$/i.test(l)) { sec = 't'; return; }
+      if (/^results\s*\(match/i.test(l) || /^results\s*:?\s*$/i.test(l)) { sec = 'r'; return; }
+      if (/^sexy f\.c\. tournament backup/i.test(l)) return;
+      if (sec === 't') {
+        var i = l.indexOf('|'), name = (i < 0 ? l : l.slice(0, i)).trim();
+        var pl = (i < 0 ? '' : l.slice(i + 1)).split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+        if (name) teams.push({ name: name, players: pl });
+      } else if (sec === 'r') {
+        var r = /^MD\s*\d+\s*\|\s*(\d{1,3}|-)\s*:\s*(\d{1,3}|-)\s*\|\s*(.+)$/i.exec(l);
+        if (r) res.push({ hg: r[1] === '-' ? null : parseInt(r[1], 10), ag: r[2] === '-' ? null : parseInt(r[2], 10), rest: r[3] }); else skipped++;
+      }
+    });
+    if (teams.length < 2) return { error: 'No teams found. Paste the complete backup text, starting with "SEXY F.C. TOURNAMENT BACKUP".' };
+    if (teams.length > 16) return { error: 'More than 16 teams found. Check the text.' };
+    var built = teams.map(function (t) { return { id: uid(), name: t.name, players: t.players.map(function (n) { return { id: 'p' + Math.random().toString(36).slice(2, 8), name: n }; }) }; });
+    var ms = schedule(built, dbl), applied = 0;
+    function idxs(name) { var o = []; built.forEach(function (t, i) { if (t.name.toLowerCase() === name.toLowerCase()) o.push(i); }); return o; }
+    function find(h, a) { for (var k = 0; k < ms.length; k++) if (!ms[k].set && ms[k].h === built[h].id && ms[k].a === built[a].id) return ms[k]; return null; }
+    res.forEach(function (r) {
+      if ((r.hg === null) !== (r.ag === null)) { skipped++; return; }
+      var parts = r.rest.split(/\s+vs\s+/i), done = false;
+      for (var cut = 1; cut < parts.length && !done; cut++) {
+        var hs = idxs(parts.slice(0, cut).join(' vs ')), as = idxs(parts.slice(cut).join(' vs '));
+        for (var x = 0; x < hs.length && !done; x++) for (var y = 0; y < as.length && !done; y++) {
+          var m = find(hs[x], as[y]), sw = false;
+          if (!m) { m = find(as[y], hs[x]); sw = !!m; }
+          if (m) { m.set = true; m.hg = sw ? r.ag : r.hg; m.ag = sw ? r.hg : r.ag; done = true; if (r.hg !== null) applied++; }
+        }
+      }
+      if (!done) skipped++;
+    });
+    ms.forEach(function (m) { delete m.set; });
+    return { state: { title: title, teams: built, dbl: dbl, dirty: false, matches: ms }, teams: built.length, applied: applied, skipped: skipped };
   }
 
   function renderMain() {
@@ -414,17 +469,23 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
       return;
     }
     if (act === 'bk-copy') {
-      var txt = backupText(); bk.text = txt;
-      var done = function () { bk.mode = ''; bk.msg = 'Backup copied. Paste it into a note or message to yourself.'; bk.ok = true; render(); };
-      var fallback = function () { bk.mode = 'show'; bk.msg = ''; render(); var ta = document.getElementById('bk-text'); if (ta) { ta.focus(); ta.select(); } };
-      try { navigator.clipboard.writeText(txt).then(done, fallback); } catch (er) { fallback(); }
+      bk.text = backupText(); bk.mode = 'show'; bk.ok = false; bk.msg = 'Select all and copy the text.';
+      render();
+      var ta = document.getElementById('bk-text'); if (ta) { ta.focus(); ta.select(); }
+      try {
+        navigator.clipboard.writeText(bk.text).then(function () { bk.ok = true; bk.msg = 'Copied to clipboard. Keep the text somewhere safe.'; render(); }, function () {});
+      } catch (er) {}
       return;
     }
     if (act === 'bk-restore') { bk.mode = 'paste'; bk.msg = ''; render(); var pt = document.getElementById('bk-text'); if (pt) pt.focus(); return; }
     if (act === 'bk-load') {
-      var ta2 = document.getElementById('bk-text');
-      if (ta2 && restoreFrom(ta2.value)) { save(); bk.mode = ''; bk.msg = 'Backup loaded.'; bk.ok = true; }
-      else { bk.msg = 'That is not a valid backup. Copy the whole text, starting with SEXYFC1.'; bk.ok = false; }
+      var ta2 = document.getElementById('bk-text'), r = parseBackup(ta2 ? ta2.value : '');
+      if (r.error) { bk.msg = r.error; bk.ok = false; }
+      else {
+        S = r.state; save(); bk.mode = ''; bk.ok = true;
+        bk.msg = r.legacy ? 'Backup loaded.' : 'Loaded ' + r.teams + ' teams and ' + r.applied + ' results.' + (r.skipped ? ' ' + r.skipped + ' lines could not be matched.' : '');
+        tab = 'table';
+      }
       render(); return;
     }
     if (act === 'expand') { exp[b.dataset.id] = !exp[b.dataset.id]; updateLive(); return; }
@@ -456,7 +517,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
 
   window.addEventListener('resize', function () {
     var a = document.activeElement;
-    if (a && a.tagName === 'INPUT') return;
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) return;
     fit();
   });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(); });
