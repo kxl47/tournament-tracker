@@ -1,7 +1,8 @@
 /* Offline cache for the tournament app. Open files are served from the cache first,
    then refreshed in the background, so a new version shows up on the next start.
    index.html registers this file as sw.js?v=<VERSION>, so each app version gets its own cache
-   and the old one is removed on activation. */
+   and the old one is removed on activation. Only caches named tournament-* belong to this app; the stats
+   edition in stats/ shares the origin and keeps its own caches. */
 var CACHE = 'tournament-' + (new URL(self.location.href).searchParams.get('v') || 'dev');
 var FILES = ['./', 'index.html', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
 
@@ -12,7 +13,7 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
-      return Promise.all(keys.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); }));
+      return Promise.all(keys.filter(function (k) { return k.indexOf('tournament-') === 0 && k !== CACHE; }).map(function (k) { return caches.delete(k); }));
     }).then(function () { return self.clients.claim(); })
   );
 });
