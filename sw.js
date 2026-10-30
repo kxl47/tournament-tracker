@@ -1,6 +1,6 @@
 /* Offline cache for the tournament app. Open files are served from the cache first,
    then refreshed in the background, so a new version shows up on the next start. */
-var CACHE = 'tournament-v3';
+var CACHE = 'tournament-v5';
 var FILES = ['./', 'index.html', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', function (e) {
