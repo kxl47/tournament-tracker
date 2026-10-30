@@ -416,13 +416,8 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
     }
     try { navigator.clipboard.writeText(txt).then(ok, function () {}); } catch (e) {}
   }
-  function resultCount() { return S.matches.filter(isPlayed).length + ['cup', 'plate'].filter(function (k) { return !!finalResult(k); }).length; }
   /* Shown under a button waiting for its second tap. Every guarded action ends with new fixtures or a new tournament, so all results go. */
-  function armHint() {
-    var n = resultCount();
-    if (!n) return '';
-    return '<b>' + (n === 1 ? 'The result' : 'All ' + n + ' results') + ' will be lost.</b> The current state is copied to the clipboard as backup text and kept on this device (Backup &rsaquo; Restore).';
-  }
+  var ARM_HINT = '<b>If you continue, all existing results will be lost.</b> The current state is copied to the clipboard as backup text and kept on this device (Backup &rsaquo; Restore).';
   function disarm(b) {
     b.textContent = b.dataset.label; delete b.dataset.armed; b.classList.remove('armed');
     var h = document.getElementById('arm-hint'); if (h) h.remove();
@@ -529,8 +524,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
       for (var q = 0; q < prev.length; q++) disarm(prev[q]);
       b.dataset.armed = '1'; b.dataset.label = b.textContent;
       b.textContent = b.classList.contains('sq') ? 'Sure?' : 'Sure? Tap again'; b.classList.add('armed');
-      var hint = armHint();
-      if (hint) (b.closest('.field, .seg, .actions') || b).insertAdjacentHTML('afterend', '<p class="hint" id="arm-hint">' + hint + '</p>');
+      if (hasResults()) (b.closest('.field, .seg, .actions') || b).insertAdjacentHTML('afterend', '<p class="hint" id="arm-hint">' + ARM_HINT + '</p>');
       clearTimeout(confirmTimer);
       confirmTimer = setTimeout(function () { if (b.isConnected) disarm(b); }, 10000);
       return;
