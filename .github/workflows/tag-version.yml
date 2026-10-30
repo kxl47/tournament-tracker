@@ -1,0 +1,51 @@
+# Creates the git tag for the app version.
+# The only place to set the version is VERSION in index.html. After a push to main,
+# this workflow tags that commit as v<VERSION> unless the tag already exists.
+name: Tag version
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set tagger
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # Tags for versions released before this workflow existed. Each is created only if missing.
+      - name: Backfill earlier tags
+        run: |
+          backfill() {
+            if git rev-parse -q --verify "refs/tags/$1" >/dev/null; then echo "$1 exists"; return; fi
+            git tag -a "$1" "$2" -m "$3"
+            git push origin "$1"
+          }
+          backfill v0.1 40c147a "v0.1 - Initial commit: empty repository with README"
+          backfill v0.2 6eaf5b5 "v0.2 - First upload: tournament tracker (index.html) with PWA files (manifest, icons, service worker)"
+          backfill v1.0 1e37e83 "v1.0 - First fully working version: readable text backup with tolerant restore, bigger backup field, offline cache"
+          backfill v1.1 e90a5ad "v1.1 - Tab renamed to Table & Scores; one-line footer with version, date and credit"
+
+      - name: Tag current version
+        run: |
+          version=$(grep -oP "var VERSION = '\K[^']+" index.html || true)
+          if [ -z "$version" ]; then echo "::error::VERSION not found in index.html"; exit 1; fi
+          tag="v$version"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists, nothing to do"
+            exit 0
+          fi
+          git tag -a "$tag" -m "$tag - $(git log -1 --format=%s)"
+          git push origin "$tag"
+          echo "Created $tag"
