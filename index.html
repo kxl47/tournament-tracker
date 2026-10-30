@@ -176,13 +176,13 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
 </div>
 <nav class="tabs"><div class="in">
   <button id="tab-table" data-tab="table">Table &amp; Scores</button>
-  <button id="tab-teams" data-tab="teams">Teams</button>
+  <button id="tab-teams" data-tab="teams">Teams &amp; Mode</button>
 </div></nav>
 
 <script>
 (function () {
   // The only place to set the version: the footer, the offline cache (sw.js) and the git tag all follow it.
-  var VERSION = '1.4', BUILD_DATE = '2026-10-30';
+  var VERSION = '1.5', BUILD_DATE = '2026-10-30';
   var KEY = 'sexyfc-tournament';
   var S = null, tab = 'table', confirmTimer = null, exp = {}, addingP = '', notice = null;
   var AUTO_KEY = KEY + '-auto';
