@@ -140,11 +140,9 @@ input.chip-in:focus { outline: none; }
 
 /* bottom nav */
 nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--black); border-top: 1px solid var(--line); padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); z-index: 5; }
-nav.tabs .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; }
-/* "Players & Stats" is the long label: its tab takes the width it needs, the other two share the rest. */
-nav.tabs #tab-players { padding: 0 16px; }
-@media (max-width: 359px) { nav.tabs button { font-size: 15px; } nav.tabs #tab-players { padding: 0 12px; } }
-nav.tabs button { height: 48px; border-radius: 24px; border: 0; background: transparent; color: var(--mute); font-family: var(--num); font-weight: 700; font-size: 18px; letter-spacing: .08em; text-transform: uppercase; }
+nav.tabs .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: auto auto auto; justify-content: space-between; gap: 6px; }
+/* Three labels of different length: each tab takes the width its label needs, and the label size scales down on narrow screens. */
+nav.tabs button { height: 48px; padding: 0 6px; white-space: nowrap; border-radius: 24px; border: 0; background: transparent; color: var(--mute); font-family: var(--num); font-weight: 700; font-size: clamp(11px, 3.6vw, 18px); letter-spacing: .04em; text-transform: uppercase; }
 nav.tabs button.on { background: var(--pink); color: var(--black); }
 .backup { margin-top: calc(var(--u) * 26); padding-top: calc(var(--u) * 16); border-top: 1px solid var(--line); }
 .backup .actions { margin-top: calc(var(--u) * 4); }
@@ -196,8 +194,8 @@ select.txt { flex: 1; min-width: 0; height: calc(var(--u) * 44); background: var
   <footer class="foot" id="foot"><span id="ver"></span><span>Stats Edition WORK IN PROGRESS!</span><span>Made with passion by kxl47</span></footer>
 </div>
 <nav class="tabs"><div class="in">
-  <button id="tab-table" data-tab="table">Table</button>
-  <button id="tab-teams" data-tab="teams">Teams</button>
+  <button id="tab-table" data-tab="table">Table &amp; Scores</button>
+  <button id="tab-teams" data-tab="teams">Teams &amp; Mode</button>
   <button id="tab-players" data-tab="players">Players &amp; Stats</button>
 </div></nav>
 
