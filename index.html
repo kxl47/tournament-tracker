@@ -178,13 +178,15 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
 
 <script>
 (function () {
-  var VERSION = '1.1', BUILD_DATE = '2026-10-30';
-  var KEY = 'sexyfc-tournament-v2';
+  // The only place to set the version: the footer, the offline cache (sw.js) and the git tag all follow it.
+  var VERSION = '1.2', BUILD_DATE = '2026-10-30';
+  var KEY = 'sexyfc-tournament';
   var S = null, tab = 'table', confirmTimer = null, exp = {}, openT = {};
 
   function load() { try { var r = localStorage.getItem(KEY); if (r) return JSON.parse(r); } catch (e) {} return null; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   function uid() { return 't' + Math.random().toString(36).slice(2, 8); }
+  function pid() { return 'p' + Math.random().toString(36).slice(2, 8); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function ord(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
   function isPlayed(m) { return m.hg !== null && m.ag !== null; }
@@ -324,16 +326,8 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
     return L.join('\n');
   }
 
-  function legacyDecode(txt) {
-    var o = JSON.parse(decodeURIComponent(escape(atob(txt.replace(/\s+/g, '').slice(8)))));
-    if (!o || !Array.isArray(o.teams) || !Array.isArray(o.matches) || o.teams.length < 2) throw 0;
-    o.teams.forEach(function (t) { if (!t.id || typeof t.name !== 'string') throw 0; t.players = Array.isArray(t.players) ? t.players : []; });
-    return { title: String(o.title || 'Tournament'), teams: o.teams, dbl: !!o.dbl, dirty: !!o.dirty, matches: o.matches };
-  }
-
   function parseBackup(raw) {
-    var txt = String(raw || '').replace(/\r/g, '').replace(/[​ ﻿]/g, ' ');
-    if (/^\s*SEXYFC1:/.test(txt)) { try { return { state: legacyDecode(txt), teams: 0, applied: 0, skipped: 0, legacy: true }; } catch (e) { return { error: 'The old-style backup text is damaged. Copy it again completely.' }; } }
+    var txt = String(raw || '').replace(/\r/g, '').replace(/[\u200b\u00a0\ufeff]/g, ' ');
     var title = 'Tournament', dbl = false, sec = '', teams = [], res = [], skipped = 0;
     txt.split('\n').forEach(function (line) {
       var l = line.trim(), m;
@@ -354,7 +348,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
     });
     if (teams.length < 2) return { error: 'No teams found. Paste the complete backup text, starting with "SEXY F.C. TOURNAMENT BACKUP".' };
     if (teams.length > 16) return { error: 'More than 16 teams found. Check the text.' };
-    var built = teams.map(function (t) { return { id: uid(), name: t.name, players: t.players.map(function (n) { return { id: 'p' + Math.random().toString(36).slice(2, 8), name: n }; }) }; });
+    var built = teams.map(function (t) { return { id: uid(), name: t.name, players: t.players.map(function (n) { return { id: pid(), name: n }; }) }; });
     var ms = schedule(built, dbl), applied = 0;
     function idxs(name) { var o = []; built.forEach(function (t, i) { if (t.name.toLowerCase() === name.toLowerCase()) o.push(i); }); return o; }
     function find(h, a) { for (var k = 0; k < ms.length; k++) if (!ms[k].set && ms[k].h === built[h].id && ms[k].a === built[a].id) return ms[k]; return null; }
@@ -489,7 +483,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
       if (r.error) { bk.msg = r.error; bk.ok = false; }
       else {
         S = r.state; save(); bk.mode = ''; bk.ok = true;
-        bk.msg = r.legacy ? 'Backup loaded.' : 'Loaded ' + r.teams + ' teams and ' + r.applied + ' results.' + (r.skipped ? ' ' + r.skipped + ' lines could not be matched.' : '');
+        bk.msg = 'Loaded ' + r.teams + ' teams and ' + r.applied + (r.applied === 1 ? ' result.' : ' results.') + (r.skipped ? ' ' + r.skipped + (r.skipped === 1 ? ' line' : ' lines') + ' could not be matched.' : '');
         tab = 'table';
       }
       render(); return;
@@ -498,7 +492,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
     if (act === 'players') { openT[b.dataset.id] = !openT[b.dataset.id]; render(); return; }
     if (act === 'addplayer') {
       var tm = findTeam(b.dataset.id); if (!tm) return;
-      tm.players = tm.players || []; var np = { id: 'p' + Math.random().toString(36).slice(2, 8), name: '' };
+      tm.players = tm.players || []; var np = { id: pid(), name: '' };
       tm.players.push(np); openT[tm.id] = true; save(); render();
       var pi = document.getElementById('pl-' + np.id); if (pi) pi.focus();
       return;
@@ -534,7 +528,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
   render();
   try {
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js?v=' + encodeURIComponent(VERSION)).catch(function () {}); });
     }
   } catch (e) {}
 })();
