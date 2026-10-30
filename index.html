@@ -137,7 +137,8 @@ input.txt:focus { border-color: var(--pink); outline: none; }
 .actions .btn { padding: 0 calc(var(--u) * 6); font-size: calc(var(--u) * 16); }
 
 /* footer note */
-.foot { margin-top: calc(var(--u) * 16); padding-top: calc(var(--u) * 8); border-top: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 2); color: var(--mute); font-family: var(--num); font-size: calc(var(--u) * 13); letter-spacing: .06em; text-align: center; }
+.foot { margin-top: calc(var(--u) * 16); padding-top: calc(var(--u) * 8); border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: center; gap: 0 calc(var(--u) * 8); color: var(--mute); font-family: var(--num); font-size: calc(var(--u) * 13); letter-spacing: .06em; text-align: center; }
+.foot span + span::before { content: '\00b7'; margin-right: calc(var(--u) * 8); }
 
 /* bottom nav */
 nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--black); border-top: 1px solid var(--line); padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); z-index: 5; }
