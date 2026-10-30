@@ -179,6 +179,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
 <script>
 (function () {
   var VERSION = '1.1', BUILD_DATE = '2026-10-30';
+  // Storage key for saved data. Its -v2 is the data format, not the app version: changing it would lose saved tournaments.
   var KEY = 'sexyfc-tournament-v2';
   var S = null, tab = 'table', confirmTimer = null, exp = {}, openT = {};
 
