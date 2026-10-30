@@ -306,7 +306,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
   function clean(s) { return String(s).replace(/[\r\n|]+/g, ' ').replace(/\s+/g, ' ').trim(); }
   function label(t, i) { return clean(t.name) || ('Team ' + (i + 1)); }
   function backupText() {
-    var names = {}, L = ['SEXY F.C. TOURNAMENT BACKUP', 'Title: ' + clean(S.title), 'Mode: ' + (S.dbl ? 'home & away' : 'single round'), '', 'TEAMS (name | players)'];
+    var names = {}, L = ['SEXY F.C. TOURNAMENT BACKUP', 'NOTE: This is an automatic backup. Do not edit this text, changes may break the import.', 'Title: ' + clean(S.title), 'Mode: ' + (S.dbl ? 'home & away' : 'single round'), '', 'TEAMS (name | players)'];
     S.teams.forEach(function (t, i) {
       names[t.id] = label(t, i);
       L.push(names[t.id] + ' | ' + (t.players || []).map(function (p) { return clean(String(p.name).replace(/,/g, ' ')); }).filter(Boolean).join(', '));
