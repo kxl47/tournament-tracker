@@ -140,7 +140,10 @@ input.chip-in:focus { outline: none; }
 
 /* bottom nav */
 nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--black); border-top: 1px solid var(--line); padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); z-index: 5; }
-nav.tabs .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+nav.tabs .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; }
+/* "Players & Stats" is the long label: its tab takes the width it needs, the other two share the rest. */
+nav.tabs #tab-players { padding: 0 16px; }
+@media (max-width: 359px) { nav.tabs button { font-size: 15px; } nav.tabs #tab-players { padding: 0 12px; } }
 nav.tabs button { height: 48px; border-radius: 24px; border: 0; background: transparent; color: var(--mute); font-family: var(--num); font-weight: 700; font-size: 18px; letter-spacing: .08em; text-transform: uppercase; }
 nav.tabs button.on { background: var(--pink); color: var(--black); }
 .backup { margin-top: calc(var(--u) * 26); padding-top: calc(var(--u) * 16); border-top: 1px solid var(--line); }
@@ -164,6 +167,9 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
 .chip-opt { height: calc(var(--u) * 30); padding: 0 calc(var(--u) * 12); border-radius: calc(var(--u) * 15); border: 1.5px solid var(--pink-dim); background: var(--black); color: var(--paper); font-size: calc(var(--u) * 14); font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 select.txt { flex: 1; min-width: 0; height: calc(var(--u) * 44); background: var(--black); color: var(--paper); border: 2px solid var(--line); border-radius: calc(var(--u) * 8); padding: 0 calc(var(--u) * 10); font-size: max(16px, calc(var(--u) * 17)); font-family: var(--body); font-weight: 500; }
 .std tr.gone td { color: var(--mute); }
+.std tr.addp td { padding: calc(var(--u) * 8) calc(var(--u) * 6) calc(var(--u) * 8) 0; border-bottom: 0; }
+.std tr.addp td + td { padding-left: calc(var(--u) * 6); padding-right: 0; }
+.std tr.addp .field { margin: 0; }
 .pedit { padding-top: calc(var(--u) * 4); }
 .pedit .field { margin-bottom: calc(var(--u) * 8); }
 .saved { display: flex; align-items: center; gap: calc(var(--u) * 8); padding: calc(var(--u) * 6) 0; border-bottom: 1px solid var(--line); font-size: calc(var(--u) * 15); font-weight: 500; }
@@ -192,7 +198,7 @@ select.txt { flex: 1; min-width: 0; height: calc(var(--u) * 44); background: var
 <nav class="tabs"><div class="in">
   <button id="tab-table" data-tab="table">Table</button>
   <button id="tab-teams" data-tab="teams">Teams</button>
-  <button id="tab-players" data-tab="players">Players</button>
+  <button id="tab-players" data-tab="players">Players &amp; Stats</button>
 </div></nav>
 
 <script>
@@ -610,24 +616,23 @@ select.txt { flex: 1; min-width: 0; height: calc(var(--u) * 44); background: var
   var dbk = { mode: '', msg: '', ok: false, text: '' };
   function renderPlayers() {
     var st = computeStats(), h = renderNotice();
-    h += '<div class="group"><label class="label" for="in-player">Add player</label><div class="field"><input class="txt" id="in-player" data-newp placeholder="Name" autocomplete="off" autocapitalize="words"><button class="btn" data-act="newp">+ Add</button></div>' + (pmsg ? '<p class="note" style="margin-top:0">' + esc(pmsg) + '</p>' : '') + '</div>';
-
     function s(id) { return st.players[id] || { t: 0, m: 0, gf: 0, ga: 0 }; }
     var list = DB.players.filter(function (p) { return !p.gone || s(p.id).m > 0; }).sort(function (a, b) {
       var x = s(a.id), y = s(b.id);
       return (y.m - x.m) || ((y.gf - y.ga) - (x.gf - x.ga)) || byName(a, b);
     });
     h += '<h2 class="sec">Players<small>' + DB.tournaments.length + ' saved</small></h2>';
-    if (!list.length) h += '<p class="note">No players yet. Add the people who play, then pick them for the teams.</p>';
-    else {
-      h += '<div class="tbl-scroll"><table class="std"><thead><tr><th class="l">Player</th><th>T</th><th>M</th><th>Goals</th><th>GD</th></tr></thead><tbody>';
-      list.forEach(function (p) {
-        var x = s(p.id), gd = x.gf - x.ga;
-        h += '<tr class="tap' + (p.gone ? ' gone' : '') + '" data-act="pedit" data-id="' + p.id + '"><td class="team l">' + esc(p.name) + '</td><td class="dim">' + x.t + '</td><td class="dim">' + x.m + '</td><td class="dim">' + x.gf + ':' + x.ga + '</td><td class="dim">' + (gd > 0 ? '+' : '') + gd + '</td></tr>';
-        if (openP === p.id) h += '<tr class="pl"><td colspan="5">' + renderPlayerEdit(p) + '</td></tr>';
-      });
-      h += '</tbody></table></div><ul class="notes"><li>T tournaments, M matches, finals included.</li><li>Goals: all goals of the player\'s team, for and against.</li><li>Tap a player to rename, merge or remove.</li></ul>';
-    }
+    if (!list.length) h += '<p class="note" style="margin:0 0 8px">No players yet. Add the people who play, then pick them for the teams.</p>';
+    h += '<div class="tbl-scroll"><table class="std"><thead><tr><th class="l">#</th><th class="l">Player</th><th>T</th><th>M</th><th>Goals</th><th>GD</th></tr></thead><tbody>';
+    list.forEach(function (p, i) {
+      var x = s(p.id), gd = x.gf - x.ga;
+      h += '<tr class="tap' + (p.gone ? ' gone' : '') + '" data-act="pedit" data-id="' + p.id + '"><td class="pos l">' + (i + 1) + '</td><td class="team l">' + esc(p.name) + '</td><td class="dim">' + x.t + '</td><td class="dim">' + x.m + '</td><td class="dim">' + x.gf + ':' + x.ga + '</td><td class="dim">' + (gd > 0 ? '+' : '') + gd + '</td></tr>';
+      if (openP === p.id) h += '<tr class="pl"><td></td><td colspan="5">' + renderPlayerEdit(p) + '</td></tr>';
+    });
+    // The last row adds a player, right under the last place.
+    h += '<tr class="addp"><td class="pos l">' + (list.length + 1) + '</td><td colspan="5"><div class="field"><input class="txt" id="in-player" data-newp placeholder="New player" aria-label="New player" autocomplete="off" autocapitalize="words"><button class="btn" data-act="newp">+ Add</button></div></td></tr>';
+    h += '</tbody></table></div>' + (pmsg ? '<p class="note">' + esc(pmsg) + '</p>' : '');
+    if (list.length) h += '<ul class="notes"><li>T tournaments, M matches, finals included.</li><li>Goals: all goals of the player\'s team, for and against.</li><li>Tap a player to rename, merge or remove.</li></ul>';
     h += renderColours(st.colors) + renderSaved() + renderDbBackup();
     return h;
   }
@@ -655,10 +660,10 @@ select.txt { flex: 1; min-width: 0; height: calc(var(--u) * 44); background: var
     });
     var h = '<h2 class="sec" style="margin-top:calc(var(--u) * 24)">Colours<small>Just for fun</small></h2>';
     if (!rows.length) return h + '<p class="note">No coloured teams in the saved tournaments yet.</p>';
-    h += '<div class="tbl-scroll"><table class="std"><thead><tr><th class="l">Colour</th><th>M</th><th>W</th><th>D</th><th>L</th><th>Cup</th><th>Plate</th></tr></thead><tbody>';
-    rows.forEach(function (c) {
+    h += '<div class="tbl-scroll"><table class="std"><thead><tr><th class="l">#</th><th class="l">Colour</th><th>M</th><th>W</th><th>D</th><th>L</th><th>Cup</th><th>Plate</th></tr></thead><tbody>';
+    rows.forEach(function (c, i) {
       var x = C[c[0]];
-      h += '<tr><td class="team l">' + dot(c[0]) + c[1] + '</td><td class="dim">' + x.m + '</td><td class="dim">' + x.w + '</td><td class="dim">' + x.d + '</td><td class="dim">' + x.l + '</td><td class="dim">' + x.cup + '</td><td class="dim">' + x.plate + '</td></tr>';
+      h += '<tr><td class="pos l">' + (i + 1) + '</td><td class="team l">' + dot(c[0]) + c[1] + '</td><td class="dim">' + x.m + '</td><td class="dim">' + x.w + '</td><td class="dim">' + x.d + '</td><td class="dim">' + x.l + '</td><td class="dim">' + x.cup + '</td><td class="dim">' + x.plate + '</td></tr>';
     });
     return h + '</tbody></table></div><ul class="notes"><li>A drawn final gives no Cup or Plate.</li></ul>';
   }
