@@ -1,6 +1,7 @@
-# Creates the git tag for the app version.
-# The only place to set the version is VERSION in index.html. After a push to main,
-# this workflow tags that commit as v<VERSION> unless the tag already exists.
+# Creates the git tags for the app versions.
+# The only place to set a version is VERSION in index.html (main app) and in stats/index.html
+# (stats edition). After a push to main, this workflow tags that commit as v<VERSION> and
+# stats-v<VERSION> unless the tag already exists.
 name: Tag version
 
 on:
@@ -29,6 +30,19 @@ jobs:
           version=$(grep -oP "var VERSION = '\K[^']+" index.html || true)
           if [ -z "$version" ]; then echo "::error::VERSION not found in index.html"; exit 1; fi
           tag="v$version"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists, nothing to do"
+            exit 0
+          fi
+          git tag -a "$tag" -m "$tag - $(git log -1 --format=%s)"
+          git push origin "$tag"
+          echo "Created $tag"
+
+      - name: Tag stats edition version
+        run: |
+          version=$(grep -oP "var VERSION = '\K[^']+" stats/index.html || true)
+          if [ -z "$version" ]; then echo "::error::VERSION not found in stats/index.html"; exit 1; fi
+          tag="stats-v$version"
           if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
             echo "$tag already exists, nothing to do"
             exit 0
