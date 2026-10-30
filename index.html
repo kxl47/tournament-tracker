@@ -92,8 +92,6 @@ table.std { width: 100%; border-collapse: collapse; font-family: var(--num); fon
 #finals { margin-top: calc(var(--u) * 20); }
 .final .t.ph { color: var(--mute); font-weight: 500; }
 input.sc:disabled { border-style: dashed; background: transparent; }
-.fw { margin: calc(var(--u) * 6) 0 0; text-align: center; font-family: var(--num); font-weight: 700; font-size: calc(var(--u) * 15); letter-spacing: .08em; text-transform: uppercase; color: var(--pink); min-height: 1.3em; }
-.fw.lvl { color: var(--mute); }
 
 /* matches */
 .rd { display: flex; justify-content: center; align-items: baseline; gap: calc(var(--u) * 10); font-family: var(--num); font-weight: 700; font-size: calc(var(--u) * 15); letter-spacing: .1em; text-transform: uppercase; color: var(--pink); margin: calc(var(--u) * 14) 0 calc(var(--u) * 2); }
@@ -232,12 +230,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
     return pr && f && f.h === pr.h.id && f.a === pr.a.id ? f : null;
   }
   function finalResult(kind) { var f = finalEntry(kind); return f && isPlayed(f) ? f : null; }
-  function finalWinner(kind) {
-    var pr = finalPair(kind), f = finalResult(kind);
-    if (!pr || !f) return '';
-    if (f.hg === f.ag) return '<p class="fw lvl" id="fw-' + kind + '">Level. Decide on penalties.</p>';
-    return '<p class="fw" id="fw-' + kind + '">Winner: ' + esc(f.hg > f.ag ? pr.h.name : pr.a.name) + '</p>';
-  }
+
 
   function standings() {
     var rows = {};
@@ -292,7 +285,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
       }
       if (pr) c += '<span class="t h">' + esc(pr.h.name) + '</span>' + inp('h', pr.h.name, f.hg) + '<span class="c">:</span>' + inp('a', pr.a.name, f.ag) + '<span class="t">' + esc(pr.a.name) + '</span>';
       else c += '<span class="t h ph">' + ord(rh) + ' place</span>' + inp('h', ord(rh) + ' place', null) + '<span class="c">:</span>' + inp('a', ord(ra) + ' place', null) + '<span class="t ph">' + ord(ra) + ' place</span>';
-      return c + '</div><div id="fwb-' + kind + '">' + finalWinner(kind) + '</div>';
+      return c + '</div>';
     }
     h += row('cup', 'Cup Final') + row('plate', 'Plate Final');
     if (ready) {
@@ -501,7 +494,6 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
       S.finals[kind] = f;
       el.classList.toggle('has', fv !== '');
       save();
-      var wb = document.getElementById('fwb-' + kind); if (wb) wb.innerHTML = finalWinner(kind);
     } else if (el.dataset.name) {
       S.teams.forEach(function (t) { if (t.id === el.dataset.name) t.name = el.value; });
       save();
