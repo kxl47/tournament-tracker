@@ -417,7 +417,7 @@ nav.tabs button.on { background: var(--pink); color: var(--black); }
     try { navigator.clipboard.writeText(txt).then(ok, function () {}); } catch (e) {}
   }
   /* Shown under a button waiting for its second tap. Every guarded action ends with new fixtures or a new tournament, so all results go. */
-  var ARM_HINT = '<b>If you continue, all existing results will likely be lost.</b> The current state is copied to the clipboard as backup text and kept on this device (Backup &rsaquo; Restore).';
+  var ARM_HINT = '<b>If you continue, all existing results will likely be reset.</b> The current state is copied to the clipboard as backup text and kept on this device (Backup &rsaquo; Restore).';
   function disarm(b) {
     b.textContent = b.dataset.label; delete b.dataset.armed; b.classList.remove('armed');
     var h = document.getElementById('arm-hint'); if (h) h.remove();
